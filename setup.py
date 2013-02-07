@@ -5,7 +5,7 @@ version = '1.0'
 
 install_requires = [
   'setuptools',
-  'github3',
+  'github3.py',
 ]
 
 setup(name='mr.sisyphus',
