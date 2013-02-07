@@ -31,6 +31,6 @@ setup(name='mr.sisyphus',
       test_suite='mr.sisyphus.tests',
       entry_points="""
       [console_scripts]
-      cabot = mr.sisyphus.king:king
+      mr.sisyphus = mr.sisyphus.king:king
       """,
       )
