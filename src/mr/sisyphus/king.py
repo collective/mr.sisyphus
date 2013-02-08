@@ -83,6 +83,20 @@ class King(object):
                 if not to_team.remove_member(member):
                     logger.error("Couldn't add %s" % member)
     
+    def synchronise_repositories(self, from_team, to_team):
+        to_repos = self.get_team(to_team).iter_repos()
+        to_repos = set(repo.full_name for repo in to_repos)
+        
+        logger.info("Adding %i repositories to %s: %s" % (len(to_repos), from_team, ", ".join(to_repos)))
+        if not self.dry_run:
+            to_team = self.get_team(to_team)
+            from_team = self.get_team(from_team)
+            for repo in to_repos:
+                if not from_team.add_repo(repo):
+                    logger.error("Couldn't add %s" % member)
+                else:
+                    to_team.remove_repo(repo)
+    
     def __call__(self, **kwargs):
         logger.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
@@ -105,5 +119,6 @@ class King(object):
         from_team = config.get("sisyphus", "developer_team")
         to_team = config.get("sisyphus", "stub_team")
         self.synchronise_members(from_team, to_team)
-
+        self.synchronise_repositories(from_team, to_team)
+        
 king = King()
