@@ -5,6 +5,7 @@ version = '1.0'
 
 install_requires = [
   'setuptools',
+  'argparse',
   'github3.py',
 ]
 
