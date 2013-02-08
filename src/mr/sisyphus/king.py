@@ -32,7 +32,7 @@ class King(object):
             username = raw_input("Github Username: ")
             password = getpass.getpass("Github password: ")
             try:
-                auth = gh.authorize(username, password, scopes=["user"], note="Mr. Sisyphus")
+                auth = gh.authorize(username, password, scopes=["user", "repo"], note="Mr. Sisyphus")
             except:
                 logger.exception("Couldn't create oauth token")
         return auth
@@ -55,6 +55,34 @@ class King(object):
         parser.read(config)
         return parser
     
+    def get_team(self, team_id):
+        all_teams = self.github.organization(self.org).iter_teams()
+        for team in all_teams:
+            if team.name == team_id:
+                return team
+    
+    def synchronise_members(self, from_team, to_team):
+        from_members = self.get_team(from_team).iter_members()
+        from_members = set(member.login for member in from_members)
+
+        to_members = self.get_team(to_team).iter_members()
+        to_members = set(member.login for member in to_members)
+        
+        members_to_add = from_members - to_members
+        members_to_remove = to_members - from_members
+        
+        logger.info("Adding %i members to %s: %s" % (len(members_to_add), to_team, ", ".join(members_to_add)))
+        logger.info("Removing %i members from %s: %s" % (len(members_to_remove), to_team, ", ".join(members_to_remove)))
+        if not self.dry_run:
+            to_team = self.get_team(to_team)
+            from_team = self.get_team(from_team)
+            for member in members_to_add:
+                if not to_team.add_member(member):
+                    logger.error("Couldn't add %s" % member)
+            for member in members_to_remove:
+                if not to_team.remove_member(member):
+                    logger.error("Couldn't add %s" % member)
+    
     def __call__(self, **kwargs):
         logger.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
@@ -67,9 +95,15 @@ class King(object):
                     action='version',
                     version='mr.sisyphus %s' % version)
         self.parser.add_argument("-n", help="Dry run, just print the calls that would be made", action="store_true")
+        
         args = self.parser.parse_args()
         
         config = self.get_configuration()
-        print self.get_or_update_token_from_config()
+        self.dry_run = args.n
+        self.github = github3.GitHub(token=self.get_or_update_token_from_config())
+        self.org = config.get("sisyphus", "organization")
+        from_team = config.get("sisyphus", "developer_team")
+        to_team = config.get("sisyphus", "stub_team")
+        self.synchronise_members(from_team, to_team)
 
 king = King()
