@@ -86,12 +86,17 @@ class King(object):
     def synchronise_repositories(self, from_team, to_team):
         to_repos = self.get_team(to_team).iter_repos()
         to_repos = set(repo.full_name for repo in to_repos)
+
+        from_repos = self.get_team(from_team).iter_repos()
+        from_repos = set(repo.full_name for repo in from_repos)
         
-        logger.info("Adding %i repositories to %s: %s" % (len(to_repos), from_team, ", ".join(to_repos)))
+        to_add = to_repos - from_repos
+        
+        logger.info("Adding %i repositories to %s: %s" % (len(to_add), from_team, ", ".join(to_add)))
         if not self.dry_run:
             to_team = self.get_team(to_team)
             from_team = self.get_team(from_team)
-            for repo in to_repos:
+            for repo in to_add:
                 if not from_team.add_repo(repo):
                     logger.error("Couldn't add %s" % member)
                 else:
