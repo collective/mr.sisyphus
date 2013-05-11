@@ -84,7 +84,7 @@ class King(object):
                     logger.error("Couldn't add %s" % member)
     
     def synchronise_repositories(self, from_team, to_team):
-        to_repos = self.get_team(to_team).iter_repos()
+        to_repos = self.github.organization(self.org).iter_repos()#self.get_team(to_team).iter_repos()
         to_repos = set(repo.full_name for repo in to_repos)
 
         from_repos = self.get_team(from_team).iter_repos()
