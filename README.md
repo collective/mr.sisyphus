@@ -34,4 +34,4 @@ From this point on the script can be run in non-interactive mode
 Dry Run
 -------
 
-To see what mr.sisyphus is planning to do invoke it as `./bin/mr.sisyphus.cfg -n` and it will skip making the actual calls to github.
+To see what mr.sisyphus is planning to do invoke it as `./bin/mr.sisyphus -n` and it will skip making the actual calls to github.
