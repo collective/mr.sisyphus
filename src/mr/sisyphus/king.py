@@ -9,10 +9,12 @@ import github3
 
 logger = logging.getLogger("mr.sisyphus")
 
-def find_base():
+def find_base(file=None):
+    if file is None:
+        file = 'mr.sisyphus.cfg'
     path = os.getcwd()
     while path:
-        if os.path.exists(os.path.join(path, 'mr.sisyphus.cfg')):
+        if os.path.exists(os.path.join(path, file)):
             break
         old_path = path
         path = os.path.dirname(path)
@@ -20,7 +22,7 @@ def find_base():
             path = None
             break
     if path is None:
-        raise IOError("mr.sisyphus.cfg not found")
+        raise IOError("%s not found" % file)
     return path
 
 class King(object):
@@ -37,20 +39,24 @@ class King(object):
                 logger.exception("Couldn't create oauth token")
         return auth
     
-    def get_or_update_token_from_config(self):
-        config = self.get_configuration()
+    def get_or_update_token_from_config(self, config, file=None):
+        if file is None:
+            file = 'mr.sisyphus.cfg'
+        
         if config.has_option("sisyphus", "token"):
             token = config.get("sisyphus", "token", None)
         else:
             token = self.create_token().token
             config.set("sisyphus", "token", token)
-            config_file_path = os.path.join(find_base(), "mr.sisyphus.cfg")
+            config_file_path = os.path.join(find_base(args.c), file)
             with open(config_file_path, 'wb') as configfile:
                 config.write(configfile)
         return token
     
-    def get_configuration(self):
-        config = os.path.join(find_base(), "mr.sisyphus.cfg")
+    def get_configuration(self, file=None):
+        if file is None:
+            file = 'mr.sisyphus.cfg'
+        config = os.path.join(find_base(file), file)
         parser = SafeConfigParser()
         parser.read(config)
         return parser
@@ -84,7 +90,8 @@ class King(object):
                     logger.error("Couldn't add %s" % member)
     
     def synchronise_repositories(self, from_team, to_team):
-        to_repos = self.github.organization(self.org).iter_repos()#self.get_team(to_team).iter_repos()
+        to_repos = self.github.organization(self.org).iter_repos()
+        #to_repos = self.get_team(to_team).iter_repos()
         to_repos = set(repo.full_name for repo in to_repos)
 
         from_repos = self.get_team(from_team).iter_repos()
@@ -98,7 +105,7 @@ class King(object):
             from_team = self.get_team(from_team)
             for repo in to_add:
                 if not from_team.add_repo(repo):
-                    logger.error("Couldn't add %s" % member)
+                    logger.error("Couldn't add %s" % repo)
                 else:
                     to_team.remove_repo(repo)
     
@@ -114,12 +121,13 @@ class King(object):
                     action='version',
                     version='mr.sisyphus %s' % version)
         self.parser.add_argument("-n", help="Dry run, just print the calls that would be made", action="store_true")
+        self.parser.add_argument("-c", help="Configuration file to use, default is mr.sisyphus.cfg", action="store")
         
         args = self.parser.parse_args()
         
-        config = self.get_configuration()
+        config = self.get_configuration(args.c)
         self.dry_run = args.n
-        self.github = github3.GitHub(token=self.get_or_update_token_from_config())
+        self.github = github3.GitHub(token=self.get_or_update_token_from_config(config))
         self.org = config.get("sisyphus", "organization")
         from_team = config.get("sisyphus", "developer_team")
         to_team = config.get("sisyphus", "stub_team")
